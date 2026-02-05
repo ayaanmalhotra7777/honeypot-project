@@ -18,39 +18,74 @@ from datetime import datetime
 from typing import List, Dict, Optional
 
 # Load environment variables FIRST before any module imports
-load_dotenv('api.env')
+try:
+    result = load_dotenv('api.env')
+    print(f"[DEBUG] load_dotenv result: {result}")
+except Exception as e:
+    print(f"[DEBUG] Warning: Failed to load api.env: {e}")
 
 # Set up API keys in environment BEFORE importing modules that use them
-GEMINI_API_KEY = os.getenv('API_KEY') or os.getenv('GEMINI_API_KEY') or 'Ayaanmalhotra@1'
+print(f"[DEBUG] Checking environment variables...")
+api_key_1 = os.getenv('API_KEY')
+api_key_2 = os.getenv('GEMINI_API_KEY')
+print(f"[DEBUG] API_KEY from env: {api_key_1[:20] if api_key_1 else 'None'}...")
+print(f"[DEBUG] GEMINI_API_KEY from env: {api_key_2[:20] if api_key_2 else 'None'}...")
+
+GEMINI_API_KEY = api_key_1 or api_key_2 or 'Ayaanmalhotra@1'
 os.environ['API_KEY'] = GEMINI_API_KEY
 os.environ['GEMINI_API_KEY'] = GEMINI_API_KEY
+print(f"[DEBUG] Set both env vars to: {GEMINI_API_KEY[:20]}...")
 
+print(f"[DEBUG] About to import FastAPI...")
 # NOW import other modules after environment is configured
 from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+print(f"[DEBUG] About to import custom modules...")
 # Import our modules (these now have proper environment variables set)
 from scam_detector import detect_scam
+print(f"[DEBUG] Imported detect_scam")
 from agent import generate_agent_reply, should_continue
+print(f"[DEBUG] Imported agent")
 from memory import create_session, get_session, memory
+print(f"[DEBUG] Imported memory")
 from extractor import extract_intelligence, get_tactics_summary
+print(f"[DEBUG] Imported extractor")
 from callback import send_final_result, should_send_callback
+print(f"[DEBUG] Imported callback")
 from db import init_db, persist_intelligence, persist_message, persist_session
+print(f"[DEBUG] Imported db")
 from logger import log_event
+print(f"[DEBUG] Imported logger")
 
 # Create scam conversations directory
-os.makedirs('scam_conversations', exist_ok=True)
+try:
+    os.makedirs('scam_conversations', exist_ok=True)
+    print(f"[DEBUG] Created scam_conversations directory")
+except Exception as e:
+    print(f"[DEBUG] Warning: Failed to create scam_conversations: {e}")
 
 # Initialize FastAPI app
+print(f"[DEBUG] Creating FastAPI app...")
 app = FastAPI(
     title="Agentic Honeypot for Scam Detection",
     description="AI-powered scam detection and intelligence extraction system",
     version="1.0.0"
 )
+print(f"[DEBUG] FastAPI app created successfully")
 
 # Initialize persistence
-init_db()
+print(f"[DEBUG] Initializing database...")
+try:
+    init_db()
+    print(f"[DEBUG] Database initialized successfully")
+except Exception as e:
+    print(f"[DEBUG] ERROR initializing database: {e}")
+    import traceback
+    traceback.print_exc()
+
+print(f"[DEBUG] Application initialization complete!")
 
 
 def save_scam_conversation_to_txt(session_id: str, session: dict, last_message: str, last_reply: str, confidence: float):
