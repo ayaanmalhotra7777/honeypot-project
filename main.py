@@ -2,14 +2,14 @@
 Main API Server - FastAPI-based REST API for Honeypot System
 """
 
-
-
-
 import sys
 from pathlib import Path
 
-# Add project root to path
+# Add project root to path  
 sys.path.insert(0, str(Path(__file__).parent))
+
+print("[DEBUG] Starting application initialization...")
+print(f"[DEBUG] Python version: {sys.version}")
   
   
 import os
