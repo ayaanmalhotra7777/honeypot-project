@@ -5,7 +5,6 @@ AI Agent Module - Engages scammers using LLM
 import os
 import re
 from typing import List, Dict, Optional
-import requests
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -16,19 +15,11 @@ class ScamEngagementAgent:
     """AI Agent that engages with scammers while extracting intelligence"""
     
     def __init__(self):
-        self.deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
-        self.deepseek_api_base = os.getenv('DEEPSEEK_API_BASE', 'https://api.deepseek.com/v1/chat/completions')
-        self.deepseek_model = os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')
-
         self.api_key = os.getenv('GEMINI_API_KEY') or os.getenv('API_KEY')
-        if self.deepseek_api_key:
-            self.model = None
-            self.has_api = True
-            self.provider = "deepseek"
-            print("✓ Using DeepSeek API for realistic responses")
-        elif self.api_key and self.api_key not in ['your-api-key-here', 'Ayaanmalhotra@1']:
+        self.gemini_model = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash-latest')
+        if self.api_key and self.api_key not in ['your-api-key-here', 'Ayaanmalhotra@1']:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
+            self.model = genai.GenerativeModel(self.gemini_model)
             self.has_api = True
             self.provider = "gemini"
             print("✓ Using Gemini API for realistic responses")
@@ -101,10 +92,7 @@ Examples of good responses:
             return self._get_smart_fallback(current_message, conversation_history)
 
         try:
-            if self.provider == "deepseek":
-                reply = self._generate_deepseek_reply(current_message, conversation_history)
-            else:
-                reply = self._generate_gemini_reply(current_message, conversation_history)
+            reply = self._generate_gemini_reply(current_message, conversation_history)
             
             # Clean up if needed
             if reply.startswith("You:") or reply.startswith("Me:"):
@@ -117,38 +105,11 @@ Examples of good responses:
             return self._get_smart_fallback(current_message, conversation_history)
 
     def _generate_deepseek_reply(self, current_message: str, conversation_history: List[Dict]) -> str:
-        """Generate response using DeepSeek Chat Completions API."""
-        messages = [{"role": "system", "content": self.system_prompt}]
 
-        if conversation_history:
-            for msg in conversation_history[-6:]:
-                role = "user" if msg.get("sender") == "scammer" else "assistant"
-                messages.append({"role": role, "content": msg.get("text", "")})
 
-        messages.append({"role": "user", "content": current_message})
 
-        headers = {
-            "Authorization": f"Bearer {self.deepseek_api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": self.deepseek_model,
-            "messages": messages,
-            "temperature": self.temperature,
-            "max_tokens": 120
-        }
 
-        response = requests.post(
-            self.deepseek_api_base,
-            json=payload,
-            headers=headers,
-            timeout=15
-        )
-        response.raise_for_status()
 
-        data = response.json()
-        reply = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-        return reply or "That sounds suspicious... Can you explain more?"
 
     def _generate_gemini_reply(self, current_message: str, conversation_history: List[Dict]) -> str:
         """Generate response using Gemini API."""
@@ -158,9 +119,6 @@ Examples of good responses:
             context += "Previous conversation:\n"
             for msg in conversation_history[-4:]:
                 sender_label = "Scammer" if msg.get("sender") == "scammer" else "You"
-                context += f"{sender_label}: {msg.get('text', '')}\n"
-
-        prompt = f"{context}\nScammer: {current_message}\nYou (respond naturally in 1-2 sentences):"
 
         response = self.model.generate_content(
             prompt,
