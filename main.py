@@ -12,15 +12,25 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
   
   
+import os
+from dotenv import load_dotenv
+from datetime import datetime
+from typing import List, Dict, Optional
+
+# Load environment variables FIRST before any module imports
+load_dotenv('api.env')
+
+# Set up API keys in environment BEFORE importing modules that use them
+GEMINI_API_KEY = os.getenv('API_KEY') or os.getenv('GEMINI_API_KEY') or 'Ayaanmalhotra@1'
+os.environ['API_KEY'] = GEMINI_API_KEY
+os.environ['GEMINI_API_KEY'] = GEMINI_API_KEY
+
+# NOW import other modules after environment is configured
 from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import List, Dict, Optional
-from datetime import datetime
-import os
-from dotenv import load_dotenv
 
-# Import our modules
+# Import our modules (these now have proper environment variables set)
 from scam_detector import detect_scam
 from agent import generate_agent_reply, should_continue
 from memory import create_session, get_session, memory
@@ -29,24 +39,17 @@ from callback import send_final_result, should_send_callback
 from db import init_db, persist_intelligence, persist_message, persist_session
 from logger import log_event
 
-load_dotenv('api.env')
-
 # Create scam conversations directory
 os.makedirs('scam_conversations', exist_ok=True)
 
-# Initialize FastAPI app FIRST (before init_db which loads modules)
+# Initialize FastAPI app
 app = FastAPI(
     title="Agentic Honeypot for Scam Detection",
     description="AI-powered scam detection and intelligence extraction system",
     version="1.0.0"
 )
 
-# API Key from environment
-GEMINI_API_KEY = os.getenv('API_KEY') or os.getenv('GEMINI_API_KEY') or 'Ayaanmalhotra@1'
-os.environ['API_KEY'] = GEMINI_API_KEY
-os.environ['GEMINI_API_KEY'] = GEMINI_API_KEY
-
-# Initialize persistence (after environment variables are set)
+# Initialize persistence
 init_db()
 
 
