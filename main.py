@@ -31,9 +31,6 @@ from logger import log_event
 
 load_dotenv('api.env')
 
-# Create scam conversations directory
-os.makedirs('scam_conversations', exist_ok=True)
-
 # Initialize persistence
 init_db()
 
@@ -46,48 +43,6 @@ app = FastAPI(
 
 # API Key from environment
 GEMINI_API_KEY = os.getenv('API_KEY', 'Ayaanmalhotra@1')
-
-
-def save_scam_conversation_to_txt(session_id: str, session: dict, last_message: str, last_reply: str, confidence: float):
-    """Save detected scam conversation to a txt file"""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"scam_conversations/scam_{session_id}_{timestamp}.txt"
-    
-    with open(filename, 'w', encoding='utf-8') as f:
-        f.write("="*80 + "\n")
-        f.write("SCAM CONVERSATION DETECTED\n")
-        f.write("="*80 + "\n\n")
-        f.write(f"Session ID: {session_id}\n")
-        f.write(f"Detection Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"Scam Confidence: {confidence:.2%}\n")
-        f.write(f"Total Messages: {session.get('message_count', 0)}\n")
-        f.write(f"Channel: {session.get('metadata', {}).get('channel', 'Unknown')}\n")
-        f.write(f"Language: {session.get('metadata', {}).get('language', 'Unknown')}\n")
-        f.write("\n" + "-"*80 + "\n")
-        f.write("CONVERSATION HISTORY\n")
-        f.write("-"*80 + "\n\n")
-        
-        # Get conversation history
-        conv_history = memory.get_conversation_history(session_id)
-        for idx, msg in enumerate(conv_history, 1):
-            sender_label = "[SCAMMER]" if msg['sender'] == 'scammer' else "[VICTIM]"
-            f.write(f"{sender_label} Message {idx}:\n")
-            f.write(f"{msg['text']}\n\n")
-        
-        # Add intelligence
-        f.write("\n" + "-"*80 + "\n")
-        f.write("EXTRACTED INTELLIGENCE\n")
-        f.write("-"*80 + "\n\n")
-        intelligence = session.get('extracted_intelligence', {})
-        for key, value in intelligence.items():
-            if value:
-                f.write(f"{key.replace('_', ' ').title()}: {value}\n")
-        
-        f.write("\n" + "="*80 + "\n")
-        f.write("END OF CONVERSATION\n")
-        f.write("="*80 + "\n")
-    
-    print(f"💾 Scam conversation saved to: {filename}")
 
 
 # ============ Request/Response Models ============
@@ -136,9 +91,9 @@ class HoneypotResponse(BaseModel):
 
 # ============ Authentication ============
 
-def verify_api_key(x_api_key: str = Header(...)) -> str:
+def verify_api_key(x_api_key: Optional[str] = Header(None)) -> str:
     """Verify API key in request header"""
-    if x_api_key != GEMINI_API_KEY:
+    if not x_api_key or x_api_key != GEMINI_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key"
@@ -151,7 +106,7 @@ def verify_api_key(x_api_key: str = Header(...)) -> str:
 @app.post("/api/honeypot", response_model=HoneypotResponse)
 async def honeypot_endpoint(
     request: HoneypotRequest,
-    api_key: str = Header(..., alias="x-api-key")
+    api_key: Optional[str] = Header(None, alias="x-api-key")
 ):
     """
     Main honeypot endpoint - detects scams and engages with scammers
@@ -165,7 +120,7 @@ async def honeypot_endpoint(
     """
     
     # Verify API key
-    if api_key != GEMINI_API_KEY:
+    if not api_key or api_key != GEMINI_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key"
@@ -249,11 +204,7 @@ async def honeypot_endpoint(
     result = send_final_result(payload)
     callback_sent = result.get("success", False)
 
-    # Step 8: Save scam conversation to txt file if detected
-    if is_scam:
-        save_scam_conversation_to_txt(session_id, session, current_message, agent_reply, confidence)
-    
-    # Step 9: Persist session snapshot and log event
+    # Step 8: Persist session snapshot and log event
     session["updated_at"] = datetime.now().isoformat()
     persist_session(session)
     log_event(
