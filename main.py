@@ -13,10 +13,14 @@ sys.path.insert(0, str(Path(__file__).parent))
 from dotenv import load_dotenv
 load_dotenv('api.env')
 
-# Configure API keys before importing modules that use them
-GEMINI_API_KEY = os.getenv('API_KEY') or os.getenv('GEMINI_API_KEY') or 'Ayaanmalhotra@1'
-os.environ['API_KEY'] = GEMINI_API_KEY
-os.environ['GEMINI_API_KEY'] = GEMINI_API_KEY
+# Configure API keys - API_KEY for validation, GEMINI_API_KEY for LLM
+VALIDATION_API_KEY = os.getenv('api_key') or os.getenv('API_KEY') or 'Ayaanmalhotra@1'
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+# Set both env vars for modules to use
+os.environ['api_key'] = VALIDATION_API_KEY  
+os.environ['API_KEY'] = VALIDATION_API_KEY
+os.environ['GEMINI_API_KEY'] = GEMINI_API_KEY or ''
 
 # NOW import FastAPI and other modules
 from fastapi import FastAPI, Header, HTTPException, status
@@ -122,7 +126,7 @@ async def honeypot_endpoint(
         )
     
     # Verify API key if provided
-    if api_key and api_key != GEMINI_API_KEY:
+    if api_key and api_key != VALIDATION_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key"
