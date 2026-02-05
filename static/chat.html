@@ -185,7 +185,7 @@
   <div class="shell">
     <section class="panel">
       <h1>Honeypot Chat Console</h1>
-      <div class="pill">API http://127.0.0.1:8000/api/honeypot</div>
+      <div class="pill">API https://honeypot-production-777f.up.railway.app/api/honeypot</div>
 
       <label>API Key</label>
       <input id="apiKey" placeholder="x-api-key" />
@@ -229,7 +229,12 @@
   </div>
 
   <script>
-    const apiUrl = "http://127.0.0.1:8000/api/honeypot";
+    // Use Railway production URL when accessing from production, else use current host for local dev
+    const isDevelopment = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const apiUrl = isDevelopment 
+      ? "http://127.0.0.1:8000/api/honeypot"
+      : "https://honeypot-production-777f.up.railway.app/api/honeypot";
+    
     const messages = document.getElementById("messages");
     const statusEl = document.getElementById("status");
     let chatStopped = false;
