@@ -3,9 +3,9 @@ Callback Module - Sends final results to GUVI evaluation endpoint
 """
 
 import os
-import json
 from typing import Dict
 from dotenv import load_dotenv
+import requests
 
 load_dotenv('api.env')
 
@@ -14,7 +14,11 @@ class CallbackHandler:
     """Handles sending results back to GUVI endpoint"""
     
     def __init__(self):
-        self.output_file = os.getenv('LOCAL_CALLBACK_FILE', 'scammer.txt')
+        self.callback_url = os.getenv(
+            'GUVI_CALLBACK_URL',
+            'https://hackathon.guvi.in/api/updateHoneyPotFinalResult'
+        )
+        self.callback_api_key = os.getenv('GUVI_CALLBACK_API_KEY')
     
     def send_result(self, payload: Dict) -> Dict:
         """
@@ -28,14 +32,22 @@ class CallbackHandler:
             Response dict with success status
         """
         try:
-            with open(self.output_file, 'a', encoding='utf-8') as handle:
-                handle.write(json.dumps(payload, ensure_ascii=True))
-                handle.write("\n")
+            headers = {"Content-Type": "application/json"}
+            if self.callback_api_key:
+                headers["x-api-key"] = self.callback_api_key
 
+            response = requests.post(
+                self.callback_url,
+                json=payload,
+                headers=headers,
+                timeout=10
+            )
+
+            success = 200 <= response.status_code < 300
             return {
-                "success": True,
-                "status_code": 200,
-                "response": f"Wrote payload to {self.output_file}",
+                "success": success,
+                "status_code": response.status_code,
+                "response": response.text,
                 "timestamp": __import__('datetime').datetime.now().isoformat()
             }
 

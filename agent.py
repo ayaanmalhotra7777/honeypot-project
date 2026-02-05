@@ -9,21 +9,25 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv('api.env')
+load_dotenv('.env')
 
 class ScamEngagementAgent:
     """AI Agent that engages with scammers while extracting intelligence"""
     
     def __init__(self):
         self.api_key = os.getenv('GEMINI_API_KEY') or os.getenv('API_KEY')
+        self.gemini_model = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash-latest')
         if self.api_key and self.api_key not in ['your-api-key-here', 'Ayaanmalhotra@1']:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
+            self.model = genai.GenerativeModel(self.gemini_model)
             self.has_api = True
+            self.provider = "gemini"
             print("✓ Using Gemini API for realistic responses")
         else:
             self.model = None
             self.has_api = False
-            print("⚠️  WARNING: GEMINI_API_KEY not set. Using fallback responses.")
+            self.provider = None
+            print("⚠️  WARNING: No LLM API key set. Using fallback responses.")
         self.temperature = float(os.getenv('LLM_TEMPERATURE', 0.85))
         
         self.system_prompt = """You are roleplaying as a real person who just received a suspicious message (potential scam).
@@ -88,30 +92,7 @@ Examples of good responses:
             return self._get_smart_fallback(current_message, conversation_history)
 
         try:
-            # Build conversation context for Gemini
-            context = self.system_prompt + "\n\n"
-            
-            # Add recent conversation history (last 4 messages)
-            if conversation_history:
-                context += "Previous conversation:\n"
-                for msg in conversation_history[-4:]:
-                    sender_label = "Scammer" if msg.get("sender") == "scammer" else "You"
-                    context += f"{sender_label}: {msg.get('text', '')}\n"
-            
-            # Build the prompt
-            prompt = f"{context}\nScammer: {current_message}\nYou (respond naturally in 1-2 sentences):"
-            
-            # Generate response with Gemini
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=self.temperature,
-                    max_output_tokens=100,
-                    top_p=0.95,
-                )
-            )
-            
-            reply = response.text.strip()
+            reply = self._generate_gemini_reply(current_message, conversation_history)
             
             # Clean up if needed
             if reply.startswith("You:") or reply.startswith("Me:"):
@@ -122,6 +103,30 @@ Examples of good responses:
         except Exception as e:
             print(f"Error generating reply: {str(e)}")
             return self._get_smart_fallback(current_message, conversation_history)
+
+    def _generate_gemini_reply(self, current_message: str, conversation_history: List[Dict]) -> str:
+        """Generate response using Gemini API."""
+        context = self.system_prompt + "\n\n"
+
+        if conversation_history:
+            context += "Previous conversation:\n"
+            for msg in conversation_history[-4:]:
+                sender_label = "Scammer" if msg.get("sender") == "scammer" else "You"
+                context += f"{sender_label}: {msg.get('text', '')}\n"
+
+        prompt = f"{context}\nScammer: {current_message}\nYou (respond naturally in 1-2 sentences):"
+
+        response = self.model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=self.temperature,
+                max_output_tokens=100,
+                top_p=0.95,
+            )
+        )
+
+        reply = response.text.strip()
+        return reply or "That sounds suspicious... Can you explain more?"
 
     def _get_smart_fallback(self, message: str, history: List[Dict]) -> str:
         """Generate contextual fallback responses based on message content and conversation stage."""
