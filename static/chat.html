@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Honeypot Chat Console</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -249,16 +252,7 @@
       statusEl.textContent = text;
     }
 
-    function showScamDetectedAlert(reason) {
-      const alertMessage = document.createElement("div");
-      alertMessage.style.cssText = "background: #ffebee; border: 2px solid #ef5350; border-radius: 16px; padding: 20px; margin-top: 16px; text-align: center; font-weight: 600; color: #c62828;";
-      alertMessage.innerHTML = `🔴 SCAM DETECTED<br><br>${reason}<br><br>Conversation saved to txt file.`;
-      messages.appendChild(alertMessage);
-      messages.scrollTop = messages.scrollHeight;
-    }
-
     async function sendMessage() {
-      
       const apiKey = document.getElementById("apiKey").value.trim();
       const sessionId = document.getElementById("sessionId").value.trim();
       const language = document.getElementById("language").value;
@@ -274,6 +268,8 @@
 
       addBubble(text, "scammer");
       document.getElementById("message").value = "";
+      document.getElementById("sendBtn").disabled = true;
+      document.getElementById("sendBtnInline").disabled = true;
       setStatus("Sending...");
 
       const payload = {
@@ -302,21 +298,40 @@
         });
 
         const data = await res.json();
-        setStatus(res.ok ? "Response received." : `Error: ${res.status}`);
-
+        
         setTimeout(() => {
-          addBubble(data.reply || "(no reply)", "agent");
-          setStatus(`Scam: ${data.scam_detected} | Confidence: ${data.confidence}`);
+          // Always add agent reply
+          if (data.reply) {
+            addBubble(data.reply, "agent");
+          } else {
+            addBubble("I'm here and listening. Tell me more.", "agent");
+          }
           
-          // Show scam detected alert but continue chat
+          // Show scam status
+          setStatus(`Scam: ${data.scam_detected} | Confidence: ${(data.confidence * 100).toFixed(0)}%`);
+          
+          // Display scam alert if detected (but don't stop chat)
           if (data.scam_detected) {
             setTimeout(() => {
-              showScamDetectedAlert(`Scam detected with ${(data.confidence * 100).toFixed(0)}% confidence!`);
-            }, 500);
+              const alertMessage = document.createElement("div");
+              alertMessage.style.cssText = "background: #fff3cd; border: 2px solid #ff9800; border-radius: 16px; padding: 20px; margin-top: 16px; text-align: center; font-weight: 600; color: #ff6f00;";
+              alertMessage.innerHTML = `⚠️ SCAM DETECTED<br>Confidence: ${(data.confidence * 100).toFixed(0)}%<br>Conversation continues & saved to txt file.`;
+              messages.appendChild(alertMessage);
+              messages.scrollTop = messages.scrollHeight;
+            }, 300);
           }
+          
+          // ALWAYS re-enable send buttons - never stop chat
+          document.getElementById("sendBtn").disabled = false;
+          document.getElementById("sendBtnInline").disabled = false;
+          
         }, delay);
       } catch (err) {
+        console.error("Error:", err);
         setStatus("Failed to reach API.");
+        // Re-enable buttons even on error
+        document.getElementById("sendBtn").disabled = false;
+        document.getElementById("sendBtnInline").disabled = false;
       }
     }
 
@@ -324,7 +339,10 @@
     document.getElementById("sendBtnInline").addEventListener("click", sendMessage);
     document.getElementById("clearBtn").addEventListener("click", () => {
       messages.innerHTML = "";
-      setStatus("Cleared.");
+      document.getElementById("sendBtn").disabled = false;
+      document.getElementById("sendBtnInline").disabled = false;
+      document.getElementById("message").value = "";
+      setStatus("Chat cleared. Ready to continue.");
     });
   </script>
 </body>
