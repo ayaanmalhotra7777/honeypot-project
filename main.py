@@ -21,6 +21,7 @@ os.environ['GEMINI_API_KEY'] = GEMINI_API_KEY
 # NOW import FastAPI and other modules
 from fastapi import FastAPI, Header, HTTPException, status
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Import our modules (they now have env vars set)
@@ -45,6 +46,15 @@ app = FastAPI(
     title="Agentic Honeypot for Scam Detection",
     description="AI-powered scam detection and intelligence extraction system",
     version="1.0.0"
+)
+
+# Add CORS middleware to allow requests from all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Initialize persistence if modules loaded
