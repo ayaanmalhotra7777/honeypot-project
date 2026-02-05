@@ -104,13 +104,6 @@ Examples of good responses:
             print(f"Error generating reply: {str(e)}")
             return self._get_smart_fallback(current_message, conversation_history)
 
-    def _generate_deepseek_reply(self, current_message: str, conversation_history: List[Dict]) -> str:
-
-
-
-
-
-
     def _generate_gemini_reply(self, current_message: str, conversation_history: List[Dict]) -> str:
         """Generate response using Gemini API."""
         context = self.system_prompt + "\n\n"
@@ -119,6 +112,9 @@ Examples of good responses:
             context += "Previous conversation:\n"
             for msg in conversation_history[-4:]:
                 sender_label = "Scammer" if msg.get("sender") == "scammer" else "You"
+                context += f"{sender_label}: {msg.get('text', '')}\n"
+
+        prompt = f"{context}\nScammer: {current_message}\nYou (respond naturally in 1-2 sentences):"
 
         response = self.model.generate_content(
             prompt,
