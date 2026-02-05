@@ -150,10 +150,30 @@ async def honeypot_endpoint(
         
         # Generate agent reply
         conv_history = memory.get_conversation_history(session_id)
+        agent_reply = None
         try:
+            print(f"[DEBUG] Calling generate_agent_reply for session {session_id}")
             agent_reply = generate_agent_reply(current_message, conv_history, metadata.get("language"))
+            print(f"[DEBUG] Agent returned: {repr(agent_reply)}")
+            
+            # Ensure we have a non-empty reply
+            if not agent_reply or agent_reply.strip() == "":
+                print(f"[DEBUG] Agent reply was empty, using fallback")
+                agent_reply = "That's interesting. Could you tell me more?"
         except Exception as e:
-            agent_reply = "I'm confused by your message. Can you explain more?"
+            print(f"[ERROR] Exception generating agent reply: {e}")
+            import traceback
+            traceback.print_exc()
+            # Provide a fallback response based on the message
+            if is_scam:
+                agent_reply = "Hmm, that doesn't sound right. Can you explain how this works?"
+            else:
+                agent_reply = "I'm not sure I understand. Could you provide more details?"
+        
+        # Final safety check
+        if not agent_reply:
+            print(f"[ERROR] Agent reply is still None after all fallbacks!")
+            agent_reply = "I'm not sure how to respond to that."
         
         # Add agent reply to history
         agent_timestamp = datetime.now().isoformat() + "Z"

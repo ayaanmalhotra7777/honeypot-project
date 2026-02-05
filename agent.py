@@ -5,7 +5,13 @@ AI Agent Module - Engages scammers using LLM
 import os
 import re
 from typing import List, Dict, Optional
-import google.generativeai as genai
+
+try:
+    import google.generativeai as genai
+except ImportError:
+    print("Warning: google.generativeai not available, using fallback responses")
+    genai = None
+
 from dotenv import load_dotenv
 
 load_dotenv('api.env')
@@ -17,10 +23,17 @@ class ScamEngagementAgent:
         # Try multiple environment variable names
         self.api_key = os.getenv('API_KEY') or os.getenv('GEMINI_API_KEY')
         
-        # Validate API key
-        is_placeholder = not self.api_key or self.api_key in ['your-api-key-here', 'Ayaanmalhotra@1', '']
+        # Validate API key - only use real API keys, not placeholders
+        is_valid_api_key = (
+            self.api_key and 
+            len(self.api_key) > 5 and
+            self.api_key not in ['your-api-key-here', 'test', '']
+        )
         
-        if not is_placeholder and self.api_key:
+        self.has_api = False
+        self.model = None
+        
+        if is_valid_api_key and genai:
             try:
                 genai.configure(api_key=self.api_key)
                 self.model = genai.GenerativeModel('gemini-pro')
@@ -28,12 +41,11 @@ class ScamEngagementAgent:
                 print("✓ Using Gemini API for realistic responses")
             except Exception as e:
                 print(f"⚠️  Warning: Failed to configure Gemini API: {str(e)}")
-                self.model = None
                 self.has_api = False
+                self.model = None
         else:
-            self.model = None
-            self.has_api = False
-            print("⚠️  WARNING: GEMINI_API_KEY not set. Using fallback responses.")
+            print("⚠️  Using fallback responses (no Gemini API)")
+        
         self.temperature = float(os.getenv('LLM_TEMPERATURE', 0.85))
         
         self.system_prompt = """You are roleplaying as a real person who just received a suspicious message (potential scam).
@@ -211,14 +223,33 @@ Examples of good responses:
 
 
 # Singleton instance
-agent = ScamEngagementAgent()
+try:
+    agent = ScamEngagementAgent()
+    print("✓ Agent instance created successfully")
+except Exception as e:
+    print(f"✗ Error creating agent instance: {e}")
+    agent = None
 
 
 def generate_agent_reply(current_message: str,
                         conversation_history: List[Dict] = None,
                         language: Optional[str] = None) -> str:
     """Convenience function to generate reply"""
-    return agent.generate_reply(current_message, conversation_history, language)
+    if agent is None:
+        print("ERROR: Agent instance not available!")
+        return "I'm not able to respond right now. Please try again."
+    
+    try:
+        reply = agent.generate_reply(current_message, conversation_history, language)
+        if not reply:
+            print(f"WARNING: Agent returned empty reply for message: {current_message[:50]}")
+            return "Sorry, I couldn't generate a response. Can you repeat that?"
+        return reply
+    except Exception as e:
+        print(f"ERROR in generate_agent_reply: {e}")
+        import traceback
+        traceback.print_exc()
+        return "I'm having trouble responding. Please try again."
 
 
 def should_continue(message: str, message_count: int) -> bool:
