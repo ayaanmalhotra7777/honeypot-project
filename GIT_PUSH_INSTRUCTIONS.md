@@ -15,7 +15,7 @@ This is required for Git to be recognized in PATH
 
 ### 3. Configure Git (First time only)
 ```bash
-git config --global user.name "Your Name"
+
 git config --global user.email "your.email@example.com"
 ```
 
