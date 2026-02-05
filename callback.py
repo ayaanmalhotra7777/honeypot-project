@@ -91,6 +91,8 @@ class CallbackHandler:
         except Exception as e:
             print(f"[ERROR] Failed to log locally: {str(e)}")
     
+    def should_send_callback(self, session_data: Dict) -> bool:
+        """
         Determine if callback should be sent
         
         Args:
@@ -119,10 +121,12 @@ class CallbackHandler:
             len(intelligence.get("suspiciousKeywords", [])) > 3  # At least 3 keywords
         ])
         
-        return (scam_detected and 
-                message_count >= 3 and 
-                has_intelligence and 
-                not final_result_sent)
+        return (
+            scam_detected and 
+            message_count >= 3 and 
+            has_intelligence and 
+            not final_result_sent
+        )
     
     def prepare_payload(self, session_data: Dict) -> Dict:
         """
