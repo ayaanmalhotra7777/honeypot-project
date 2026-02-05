@@ -14,12 +14,22 @@ class ScamEngagementAgent:
     """AI Agent that engages with scammers while extracting intelligence"""
     
     def __init__(self):
-        self.api_key = os.getenv('GEMINI_API_KEY') or os.getenv('API_KEY')
-        if self.api_key and self.api_key not in ['your-api-key-here', 'Ayaanmalhotra@1']:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
-            self.has_api = True
-            print("✓ Using Gemini API for realistic responses")
+        # Try multiple environment variable names
+        self.api_key = os.getenv('API_KEY') or os.getenv('GEMINI_API_KEY')
+        
+        # Validate API key
+        is_placeholder = not self.api_key or self.api_key in ['your-api-key-here', 'Ayaanmalhotra@1', '']
+        
+        if not is_placeholder and self.api_key:
+            try:
+                genai.configure(api_key=self.api_key)
+                self.model = genai.GenerativeModel('gemini-pro')
+                self.has_api = True
+                print("✓ Using Gemini API for realistic responses")
+            except Exception as e:
+                print(f"⚠️  Warning: Failed to configure Gemini API: {str(e)}")
+                self.model = None
+                self.has_api = False
         else:
             self.model = None
             self.has_api = False

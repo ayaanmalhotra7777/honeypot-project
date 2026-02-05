@@ -34,10 +34,7 @@ load_dotenv('api.env')
 # Create scam conversations directory
 os.makedirs('scam_conversations', exist_ok=True)
 
-# Initialize persistence
-init_db()
-
-# Initialize FastAPI app
+# Initialize FastAPI app FIRST (before init_db which loads modules)
 app = FastAPI(
     title="Agentic Honeypot for Scam Detection",
     description="AI-powered scam detection and intelligence extraction system",
@@ -45,7 +42,12 @@ app = FastAPI(
 )
 
 # API Key from environment
-GEMINI_API_KEY = os.getenv('API_KEY', 'Ayaanmalhotra@1')
+GEMINI_API_KEY = os.getenv('API_KEY') or os.getenv('GEMINI_API_KEY') or 'Ayaanmalhotra@1'
+os.environ['API_KEY'] = GEMINI_API_KEY
+os.environ['GEMINI_API_KEY'] = GEMINI_API_KEY
+
+# Initialize persistence (after environment variables are set)
+init_db()
 
 
 def save_scam_conversation_to_txt(session_id: str, session: dict, last_message: str, last_reply: str, confidence: float):
