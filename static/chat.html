@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Honeypot Chat Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14181f;
+      --fog: #f4f0ea;
+      --sage: #c7d1c0;
+      --rust: #d6604d;
+      --pebble: #8c98a8;
+      --mint: #1f7a5b;
+      --sun: #f0b429;
+      --shadow: rgba(20, 24, 31, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      background: radial-gradient(circle at 10% 10%, #fff7e8 0%, #f2efe6 45%, #e6ecf4 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 28px;
+    }
+
+    .shell {
+      width: min(1120px, 100%);
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      box-shadow: 0 18px 40px var(--shadow);
+      padding: 20px;
+      backdrop-filter: blur(6px);
+    }
+
+    h1 {
+      font-family: "Fraunces", serif;
+      font-size: 28px;
+      margin: 0 0 12px 0;
+    }
+
+    label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--pebble);
+      margin-top: 16px;
+      display: block;
+    }
+
+    input, select {
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #e4e7ec;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .button {
+      margin-top: 18px;
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: none;
+      background: var(--ink);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .button.secondary {
+      background: var(--sage);
+      color: var(--ink);
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 22px rgba(20, 24, 31, 0.16);
+    }
+
+    .chat {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 72vh;
+    }
+
+    .messages {
+      flex: 1;
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    .bubble {
+      padding: 14px 16px;
+      border-radius: 18px;
+      margin-bottom: 12px;
+      max-width: 70%;
+      animation: pop 0.3s ease;
+    }
+
+    .bubble.scammer {
+      background: #fbeaea;
+      border: 1px solid #f2c6c1;
+      align-self: flex-start;
+    }
+
+    .bubble.agent {
+      background: #e8f3ee;
+      border: 1px solid #c5e3d6;
+      align-self: flex-end;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: var(--pebble);
+      margin-top: 6px;
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #e4e7ec;
+      font-family: "Space Grotesk", sans-serif;
+      min-height: 58px;
+      resize: vertical;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #f7f0e6;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f7f7f8;
+      font-size: 13px;
+      color: #3b4350;
+    }
+
+    @keyframes pop {
+      from { transform: scale(0.98); opacity: 0.4; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .chat { height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="panel">
+      <h1>Honeypot Chat Console</h1>
+      <div class="pill">API http://127.0.0.1:8000/api/honeypot</div>
+
+      <label>API Key</label>
+      <input id="apiKey" placeholder="x-api-key" />
+
+      <label>Session ID</label>
+      <input id="sessionId" value="session-ui-1" />
+
+      <label>Language</label>
+      <select id="language">
+        <option>Auto</option>
+        <option>English</option>
+        <option>Hindi</option>
+        <option>Tamil</option>
+        <option>Telugu</option>
+        <option>Spanish</option>
+        <option>French</option>
+      </select>
+
+      <label>Locale</label>
+      <input id="locale" value="IN" />
+
+      <label>Channel</label>
+      <input id="channel" value="SMS" />
+
+      <label>Reply delay (ms)</label>
+      <input id="delay" type="number" min="0" value="700" />
+
+      <button class="button" id="sendBtn">Send Message</button>
+      <button class="button secondary" id="clearBtn">Clear Chat</button>
+
+      <div class="status" id="status">Ready.</div>
+    </section>
+
+    <section class="panel chat">
+      <div class="messages" id="messages"></div>
+      <div class="composer">
+        <textarea id="message" placeholder="Type a scam message here..."></textarea>
+        <button class="button" id="sendBtnInline">Send</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const apiUrl = "http://127.0.0.1:8000/api/honeypot";
+    const messages = document.getElementById("messages");
+    const statusEl = document.getElementById("status");
+    let chatStopped = false;
+
+    function addBubble(text, who) {
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${who}`;
+      bubble.textContent = text;
+      messages.appendChild(bubble);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function stopChat(reason) {
+      chatStopped = true;
+      document.getElementById("sendBtn").disabled = true;
+      document.getElementById("sendBtnInline").disabled = true;
+      document.getElementById("message").disabled = true;
+      
+      const stopMessage = document.createElement("div");
+      stopMessage.style.cssText = "background: #ffebee; border: 2px solid #ef5350; border-radius: 16px; padding: 20px; margin-top: 16px; text-align: center; font-weight: 600; color: #c62828;";
+      stopMessage.innerHTML = `🛑 CHAT STOPPED<br><br>${reason}<br><br>Conversation saved to txt file.`;
+      messages.appendChild(stopMessage);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function sendMessage() {
+      if (chatStopped) {
+        setStatus("Chat stopped - scam detected.");
+        return;
+      }
+      
+      const apiKey = document.getElementById("apiKey").value.trim();
+      const sessionId = document.getElementById("sessionId").value.trim();
+      const language = document.getElementById("language").value;
+      const locale = document.getElementById("locale").value.trim();
+      const channel = document.getElementById("channel").value.trim();
+      const delay = Number(document.getElementById("delay").value || 0);
+      const text = document.getElementById("message").value.trim();
+
+      if (!apiKey || !sessionId || !text) {
+        setStatus("API key, session ID, and message are required.");
+        return;
+      }
+
+      addBubble(text, "scammer");
+      document.getElementById("message").value = "";
+      setStatus("Sending...");
+
+      const payload = {
+        sessionId,
+        message: {
+          sender: "scammer",
+          text,
+          timestamp: new Date().toISOString()
+        },
+        conversationHistory: [],
+        metadata: {
+          channel,
+          language,
+          locale
+        }
+      };
+
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        setStatus(res.ok ? "Response received." : `Error: ${res.status}`);
+
+        setTimeout(() => {
+          addBubble(data.reply || "(no reply)", "agent");
+          setStatus(`Scam: ${data.scam_detected} | Confidence: ${data.confidence}`);
+          
+          // Stop chat if scam detected
+          if (data.scam_detected) {
+            setTimeout(() => {
+              stopChat(`Scam detected with ${(data.confidence * 100).toFixed(0)}% confidence!`);
+            }, 500);
+          }
+        }, delay);
+      } catch (err) {
+        setStatus("Failed to reach API.");
+      }
+    }
+
+    document.getElementById("sendBtn").addEventListener("click", sendMessage);
+    document.getElementById("sendBtnInline").addEventListener("click", sendMessage);
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      messages.innerHTML = "";
+      chatStopped = false;
+      document.getElementById("sendBtn").disabled = false;
+      document.getElementById("sendBtnInline").disabled = false;
+      document.getElementById("message").disabled = false;
+      setStatus("Cleared.");
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agentic Honey-Pot – API Endpoint Tester</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14181f;
+      --fog: #f4f0ea;
+      --sage: #c7d1c0;
+      --rust: #d6604d;
+      --pebble: #8c98a8;
+      --mint: #1f7a5b;
+      --sun: #f0b429;
+      --shadow: rgba(20, 24, 31, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 28px;
+    }
+
+    .container {
+      width: min(720px, 100%);
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+      padding: 48px;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      font-family: "Fraunces", serif;
+      font-size: 32px;
+      margin: 0 0 8px 0;
+      color: #667eea;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--pebble);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    label .required {
+      color: #ff4757;
+      margin-left: 4px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 2px solid #e4e7ec;
+      font-size: 15px;
+      font-family: "Space Grotesk", monospace;
+      background: #fff;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    input::placeholder {
+      color: #a0a8b8;
+    }
+
+    .button {
+      width: 100%;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-top: 12px;
+    }
+
+    .button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(102, 126, 234, 0.4);
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .results {
+      margin-top: 32px;
+      padding: 24px;
+      border-radius: 16px;
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      display: none;
+    }
+
+    .results.show {
+      display: block;
+      animation: slideIn 0.4s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .test-item {
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      background: white;
+      border: 1px solid #e4e7ec;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .test-item .icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .test-item .content {
+      flex: 1;
+    }
+
+    .test-item .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+
+    .test-item .detail {
+      font-size: 13px;
+      color: var(--pebble);
+    }
+
+    .test-item.pass {
+      border-color: #28a745;
+      background: #f1f9f3;
+    }
+
+    .test-item.fail {
+      border-color: #dc3545;
+      background: #fef2f2;
+    }
+
+    .test-item.info {
+      border-color: #17a2b8;
+      background: #f0f9fb;
+    }
+
+    .code-block {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .badge.success {
+      background: #28a745;
+      color: white;
+    }
+
+    .badge.error {
+      background: #dc3545;
+      color: white;
+    }
+
+    .badge.warning {
+      background: #ffc107;
+      color: #000;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: var(--pebble);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🍯 Agentic Honey-Pot</h1>
+    <p class="subtitle">
+      This Honeypot API Endpoint Tester allows participants to validate whether their deployed honeypot service is reachable, secured, and responding correctly. The tester verifies authentication, endpoint availability, and response behavior using a simple request.
+    </p>
+
+    <form id="testForm">
+      <div class="form-group">
+        <label>
+          HEADERS <span class="required">*</span>
+        </label>
+        <input 
+          type="text" 
+          id="apiKey" 
+          placeholder="Enter x-api-key"
+          value="Ayaanmalhotra@1"
+          required
+        />
+        <p class="help-text">Your API authentication key (x-api-key header)</p>
+      </div>
+
+      <div class="form-group">
+        <label>
+          HONEYPOT API ENDPOINT URL <span class="required">*</span>
+        </label>
+        <input 
+          type="url" 
+          id="endpointUrl" 
+          placeholder="https://your-honeypot.com/api/honeypot"
+          value="http://127.0.0.1:8000/api/honeypot"
+          required
+        />
+        <p class="help-text">Full URL to your honeypot endpoint (e.g., http://127.0.0.1:8000/api/honeypot)</p>
+      </div>
+
+      <button type="submit" class="button" id="testBtn">
+        🚀 Test Endpoint
+      </button>
+    </form>
+
+    <div class="results" id="results">
+      <!-- Results will be injected here -->
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('testForm');
+    const results = document.getElementById('results');
+    const testBtn = document.getElementById('testBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const endpointUrl = document.getElementById('endpointUrl').value.trim();
+
+      if (!apiKey || !endpointUrl) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      testBtn.innerHTML = '<span class="spinner"></span> Testing...';
+      testBtn.disabled = true;
+      results.classList.remove('show');
+      results.innerHTML = '';
+
+      const testResults = [];
+
+      // Test 1: Authentication Check
+      testResults.push({
+        title: '🔐 Authentication Check',
+        detail: 'Verifying x-api-key header validation',
+        status: 'testing'
+      });
+
+      // Test 2: Endpoint Availability
+      testResults.push({
+        title: '🌐 Endpoint Availability',
+        detail: 'Checking if endpoint is reachable',
+        status: 'testing'
+      });
+
+      // Test 3: Response Validation
+      testResults.push({
+        title: '✅ Response Validation',
+        detail: 'Validating API response structure',
+        status: 'testing'
+      });
+
+      // Run tests
+      try {
+        // Test payload
+        const testPayload = {
+          sessionId: `test-${Date.now()}`,
+          message: {
+            sender: "scammer",
+            text: "Hello, your bank account will be blocked. Please verify your details.",
+            timestamp: new Date().toISOString()
+          },
+          conversationHistory: [],
+          metadata: {
+            channel: "API_TESTER",
+            language: "English",
+            locale: "IN"
+          }
+        };
+
+        // Make actual request
+        const response = await fetch(endpointUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey
+          },
+          body: JSON.stringify(testPayload)
+        });
+
+        const data = await response.json();
+
+        // Evaluate results
+        if (response.status === 401) {
+          testResults[0].status = 'fail';
+          testResults[0].detail = '❌ Authentication failed - Invalid API key';
+          testResults[1].status = 'skip';
+          testResults[2].status = 'skip';
+        } else if (response.status === 404) {
+          testResults[0].status = 'pass';
+          testResults[0].detail = '✅ API key validation working (endpoint not found)';
+          testResults[1].status = 'fail';
+          testResults[1].detail = '❌ Endpoint not found (404)';
+          testResults[2].status = 'skip';
+        } else if (response.ok) {
+          testResults[0].status = 'pass';
+          testResults[0].detail = '✅ Authentication successful';
+          
+          testResults[1].status = 'pass';
+          testResults[1].detail = `✅ Endpoint reachable (HTTP ${response.status})`;
+          
+          // Validate response structure
+          const hasReply = data.hasOwnProperty('reply');
+          const hasScamDetected = data.hasOwnProperty('scam_detected');
+          const hasConfidence = data.hasOwnProperty('confidence');
+          
+          if (hasReply && hasScamDetected && hasConfidence) {
+            testResults[2].status = 'pass';
+            testResults[2].detail = '✅ Response structure valid';
+            testResults[2].data = data;
+          } else {
+            testResults[2].status = 'fail';
+            testResults[2].detail = '❌ Invalid response structure';
+            testResults[2].data = data;
+          }
+        } else {
+          testResults[0].status = 'fail';
+          testResults[1].status = 'fail';
+          testResults[1].detail = `❌ HTTP ${response.status} - ${response.statusText}`;
+          testResults[2].status = 'skip';
+        }
+
+      } catch (error) {
+        testResults[0].status = 'fail';
+        testResults[0].detail = '❌ Connection failed';
+        testResults[1].status = 'fail';
+        testResults[1].detail = `❌ ${error.message}`;
+        testResults[2].status = 'skip';
+      }
+
+      // Display results
+      displayResults(testResults);
+      testBtn.innerHTML = '🚀 Test Endpoint';
+      testBtn.disabled = false;
+    });
+
+    function displayResults(testResults) {
+      results.innerHTML = '<h3 style="margin-top: 0; margin-bottom: 16px;">Test Results</h3>';
+      
+      let allPassed = true;
+
+      testResults.forEach(test => {
+        const item = document.createElement('div');
+        item.className = 'test-item';
+        
+        if (test.status === 'pass') {
+          item.classList.add('pass');
+          item.innerHTML = `
+            <div class="icon">✅</div>
+            <div class="content">
+              <div class="title">${test.title}</div>
+              <div class="detail">${test.detail}</div>
+            </div>
+          `;
+        } else if (test.status === 'fail') {
+          allPassed = false;
+          item.classList.add('fail');
+          item.innerHTML = `
+            <div class="icon">❌</div>
+            <div class="content">
+              <div class="title">${test.title}</div>
+              <div class="detail">${test.detail}</div>
+            </div>
+          `;
+        } else if (test.status === 'skip') {
+          item.classList.add('info');
+          item.innerHTML = `
+            <div class="icon">⏭️</div>
+            <div class="content">
+              <div class="title">${test.title}</div>
+              <div class="detail">⚠️ Skipped due to previous failure</div>
+            </div>
+          `;
+        }
+
+        // Add response data if available
+        if (test.data) {
+          const codeBlock = document.createElement('div');
+          codeBlock.className = 'code-block';
+          codeBlock.textContent = JSON.stringify(test.data, null, 2);
+          item.querySelector('.content').appendChild(codeBlock);
+        }
+
+        results.appendChild(item);
+      });
+
+      // Add overall status badge
+      const statusBadge = document.createElement('div');
+      statusBadge.style.marginTop = '20px';
+      statusBadge.style.textAlign = 'center';
+      
+      if (allPassed) {
+        statusBadge.innerHTML = '<span class="badge success">✅ ALL TESTS PASSED</span>';
+      } else {
+        statusBadge.innerHTML = '<span class="badge error">❌ SOME TESTS FAILED</span>';
+      }
+      
+      results.appendChild(statusBadge);
+      results.classList.add('show');
+    }
+  </script>
+</body>
+</html>
