@@ -56,5 +56,4 @@ training_dataset.csv
 scam_conversations/
 
 # Temporary files
-*.txt
 scammer.txt
