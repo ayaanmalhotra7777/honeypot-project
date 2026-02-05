@@ -1,0 +1,4 @@
+# Railway configuration
+{
+  "builder": "dockerfile"
+}
